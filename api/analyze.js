@@ -9,12 +9,12 @@ export default async function handler(req, res) {
   const { company } = req.body || {};
   if (!company) return res.status(400).json({ error: 'Falta el campo company' });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key no configurada en el servidor' });
 
-  const SYSTEM_PROMPT = `Eres un experto en análisis comercial y estrategia de ventas B2B, especializado en ecommerce, marketplaces y expansión internacional. Tu tarea es hacer el "discovery" de una empresa para entender si encaja como potencial vendor en Alibaba.com.
+  const prompt = `Eres un experto en análisis comercial y estrategia de ventas B2B, especializado en ecommerce, marketplaces y expansión internacional. Tu tarea es hacer el "discovery" de una empresa para entender si encaja como potencial vendor en Alibaba.com.
 
-Cuando el usuario te dé el nombre o web de una empresa, debes responder ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, sin texto adicional) con exactamente esta estructura:
+Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, sin texto adicional) con exactamente esta estructura:
 
 {
   "empresa": "nombre de la empresa",
@@ -34,29 +34,26 @@ Cuando el usuario te dé el nombre o web de una empresa, debes responder ÚNICAM
     "adquisicion_clientes": "descripción de cómo adquieren clientes"
   },
   "negociacion": {
-    "enfoque": "párrafo de 3-5 frases con el enfoque de negociación específico para esta empresa para que empiece a vender en Alibaba.com. Menciona argumentos concretos basados en lo que sabes de la empresa.",
+    "enfoque": "párrafo de 3-5 frases con el enfoque de negociación específico para esta empresa para que empiece a vender en Alibaba.com.",
     "argumentos_clave": ["argumento 1", "argumento 2", "argumento 3"]
   },
   "confianza": "alta | media | baja"
 }
 
-Si no tienes información suficiente sobre algún campo, pon "No disponible" o una estimación razonada. El campo confianza indica qué tan segura es tu información sobre esta empresa.`;
+Analiza esta empresa: ${company}`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: `Analiza esta empresa: ${company}` }]
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
+        })
+      }
+    );
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -64,7 +61,7 @@ Si no tienes información suficiente sobre algún campo, pon "No disponible" o u
     }
 
     const data = await response.json();
-    const raw = data.content.map(i => i.text || '').join('\n');
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
     return res.status(200).json(result);
