@@ -104,7 +104,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     </div>
     <span class="logo-name">Vendor <span>Discovery</span></span>
   </div>
-  <span class="header-note">Powered by Claude AI</span>
+  <span class="header-note">Powered by Gemini AI</span>
 </header>
 <main class="main">
   <div class="hero">
@@ -171,7 +171,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
       Analizar otra empresa
     </button>
   </div>
-  <div class="footer">Esta herramienta usa la API de Anthropic a través de un servidor seguro.</div>
+  <div class="footer">Esta herramienta usa Gemini AI a través de un servidor seguro. Gratis hasta 1.500 consultas/día.</div>
 </main>
 <script>
 function setExample(name) {
@@ -204,60 +204,3 @@ function renderResults(d) {
     r('¿Vende online de forma propia?', c.venta_online_propia) +
     r('Plataforma ecommerce', c.plataforma_ecommerce) +
     r('¿Vende en marketplaces?', c.marketplaces);
-  document.getElementById('estrategia-body').innerHTML =
-    r('¿Exportador?', e.exportador) +
-    r('Mercados / países', e.mercados) +
-    r('Tipos de cliente', e.tipos_cliente) +
-    r('Adquisición de clientes', e.adquisicion_clientes);
-  const args = Array.isArray(n.argumentos_clave)
-    ? n.argumentos_clave.map(a => `<div class="arg-item"><div class="arg-dot"></div><span>${a}</span></div>`).join('')
-    : '';
-  document.getElementById('nego-body').innerHTML = `
-    <div class="nego-pitch"><p>${n.enfoque || 'No disponible'}</p></div>
-    ${args ? `<div class="args-label">Argumentos clave</div><div class="args-list">${args}</div>` : ''}
-  `;
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('results').style.display = 'block';
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-function resetUI() {
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('error-box').style.display = 'none';
-  document.getElementById('company-input').value = '';
-  document.getElementById('company-input').focus();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  const btn = document.getElementById('analyze-btn');
-  btn.disabled = false;
-  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Analizar';
-}
-async function runAnalysis() {
-  const company = document.getElementById('company-input').value.trim();
-  if (!company) { document.getElementById('company-input').focus(); return; }
-  document.getElementById('error-box').style.display = 'none';
-  document.getElementById('results').style.display = 'none';
-  const btn = document.getElementById('analyze-btn');
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Analizando…';
-  document.getElementById('loading-name').textContent = company;
-  document.getElementById('loading').style.display = 'block';
-  try {
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company })
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || `Error ${response.status}`);
-    renderResults(data);
-  } catch (e) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error-box').textContent = e.message || 'Error al conectar con el servidor.';
-    document.getElementById('error-box').style.display = 'block';
-    btn.disabled = false;
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Analizar';
-  }
-}
-document.getElementById('company-input').addEventListener('keydown', e => { if (e.key === 'Enter') runAnalysis(); });
-</script>
-</body>
-</html>
