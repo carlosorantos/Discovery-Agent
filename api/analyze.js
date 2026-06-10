@@ -9,64 +9,97 @@ export default async function handler(req, res) {
   const { company } = req.body || {};
   if (!company) return res.status(400).json({ error: 'Falta el campo company' });
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key no configurada en el servidor' });
+  const groqKey = process.env.GROQ_API_KEY;
+  const tavilyKey = process.env.TAVILY_API_KEY;
+  if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY no configurada' });
+  if (!tavilyKey) return res.status(500).json({ error: 'TAVILY_API_KEY no configurada' });
 
-  const prompt = `Eres un experto en análisis comercial y estrategia de ventas B2B, especializado en ecommerce, marketplaces y expansión internacional. Tu tarea es hacer el "discovery" de una empresa para entender si encaja como potencial vendor en Alibaba.com.
+  try {
+    // PASO 1: Buscar información real de la empresa con Tavily
+    const searchRes = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: tavilyKey,
+        query: `${company} empresa productos catalogo ecommerce exportacion facturación mercados`,
+        search_depth: 'advanced',
+        max_results: 6,
+        include_answer: true
+      })
+    });
 
-Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, sin texto adicional) con exactamente esta estructura:
+    let searchContext = '';
+    let sources = [];
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      sources = (searchData.results || []).map(r => ({ title: r.title, url: r.url }));
+      const snippets = (searchData.results || []).map(r => `[${r.title}]: ${r.content}`).join('\n\n');
+      searchContext = searchData.answer ? `Resumen: ${searchData.answer}\n\nFuentes:\n${snippets}` : snippets;
+    }
+
+    // PASO 2: Analizar con Groq usando la información encontrada
+    const prompt = `Eres un experto en análisis comercial B2B especializado en ecommerce y marketplaces internacionales. Analiza la empresa "${company}" para evaluar su perfil como potencial vendor en Alibaba.com.
+
+${searchContext ? `Información encontrada en internet sobre esta empresa:\n${searchContext}\n\n` : ''}
+
+Basándote en esta información, responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks) con esta estructura exacta:
 
 {
-  "empresa": "nombre de la empresa",
+  "empresa": "nombre oficial de la empresa",
+  "facturacion_anual": "estimación de facturación anual (ej: ~50M€, +200M€, desconocido...)",
   "catalogo": {
     "tipo": "Fabricante | Distribuidor/Importador | Fabricante y Distribuidor",
     "private_label": "Sí | No | Posiblemente",
-    "num_skus": "estimación aproximada como texto (ej: ~500 SKUs, +2.000 referencias...)",
-    "producto_estrella": "nombre o descripción del producto principal",
+    "num_skus": "estimación aproximada (ej: ~500 SKUs, +2.000 referencias...)",
+    "producto_estrella": "producto o categoría principal",
     "venta_online_propia": "Sí | No",
-    "plataforma_ecommerce": "nombre de la plataforma o N/D si no se detecta",
-    "marketplaces": "lista de marketplaces donde vende o Ninguno detectado"
+    "plataforma_ecommerce": "plataforma detectada o N/D",
+    "marketplaces": "marketplaces donde vende o Ninguno detectado"
   },
   "estrategia_comercial": {
     "exportador": "Sí | No | Posiblemente",
-    "mercados": "descripción de países/regiones donde opera",
-    "tipos_cliente": "descripción de los tipos de clientes (B2B, B2C, retailers, etc.)",
-    "adquisicion_clientes": "descripción de cómo adquieren clientes"
+    "mercados": "países o regiones donde opera",
+    "tipos_cliente": "tipos de clientes (B2B, B2C, retailers, etc.)",
+    "adquisicion_clientes": "cómo adquieren clientes"
   },
   "negociacion": {
-    "enfoque": "párrafo de 3-5 frases con el enfoque de negociación específico para esta empresa para que empiece a vender en Alibaba.com.",
-    "argumentos_clave": ["argumento 1", "argumento 2", "argumento 3"]
+    "enfoque": "párrafo de 3-5 frases con el enfoque de negociación específico para convencer a esta empresa de vender en Alibaba.com",
+    "argumentos_clave": ["argumento 1", "argumento 2", "argumento 3"],
+    "objeciones": [
+      {"objecion": "objeción probable 1", "respuesta": "cómo rebatirla"},
+      {"objecion": "objeción probable 2", "respuesta": "cómo rebatirla"},
+      {"objecion": "objeción probable 3", "respuesta": "cómo rebatirla"}
+    ]
   },
   "confianza": "alta | media | baja"
-}
+}`;
 
-Analiza esta empresa: ${company}`;
-
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${groqKey}`
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         temperature: 0.3,
-        max_tokens: 1500,
+        max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      return res.status(response.status).json({ error: err.error?.message || 'Error de la API' });
+    if (!groqRes.ok) {
+      const err = await groqRes.json().catch(() => ({}));
+      return res.status(groqRes.status).json({ error: err.error?.message || 'Error de Groq' });
     }
 
-    const data = await response.json();
-    const raw = data.choices?.[0]?.message?.content || '';
+    const groqData = await groqRes.json();
+    const raw = groqData.choices?.[0]?.message?.content || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
+    result.sources = sources;
     return res.status(200).json(result);
+
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Error interno del servidor' });
   }
