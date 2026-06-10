@@ -62,13 +62,17 @@ Basándote en esta información, responde ÚNICAMENTE con un JSON válido (sin m
     "tipos_cliente": "tipos de clientes (B2B, B2C, retailers, etc.)",
     "adquisicion_clientes": "cómo adquieren clientes"
   },
-  "negociacion": {
-    "enfoque": "párrafo de 3-5 frases con el enfoque de negociación específico para convencer a esta empresa de vender en Alibaba.com",
-    "argumentos_clave": ["argumento 1", "argumento 2", "argumento 3"],
+"negociacion": {
+    "enfoque": "párrafo de 4-6 frases MUY específico para esta empresa concreta. Menciona sus productos reales, sus mercados actuales, su situación competitiva y por qué Alibaba.com es la solución para su caso particular. NO uses frases genéricas como 'ampliar mercado' o 'aumentar ventas'. Habla de buyers específicos en Alibaba.com que compran exactamente lo que esta empresa vende, del volumen de RFQs en su categoría, y de competidores suyos que ya venden en Alibaba.com.",
+    "argumentos_clave": [
+      "argumento 1: muy específico para esta empresa, con datos concretos de Alibaba.com relevantes para su categoría de producto",
+      "argumento 2: basado en sus mercados actuales y cómo Alibaba.com los complementa o abre nuevos compradores B2B",
+      "argumento 3: basado en su modelo de negocio concreto (fabricante/distribuidor) y cómo encaja en Alibaba.com"
+    ],
     "objeciones": [
-      {"objecion": "objeción probable 1", "respuesta": "cómo rebatirla"},
-      {"objecion": "objeción probable 2", "respuesta": "cómo rebatirla"},
-      {"objecion": "objeción probable 3", "respuesta": "cómo rebatirla"}
+      {"objecion": "objeción MUY probable y específica para este tipo de empresa y sector, no genérica", "respuesta": "respuesta concreta con datos o ejemplos reales de Alibaba.com que rebatan exactamente esa objeción"},
+      {"objecion": "segunda objeción específica del sector o modelo de negocio de esta empresa", "respuesta": "respuesta con solución concreta que ofrece Alibaba.com para ese caso"},
+      {"objecion": "tercera objeción relacionada con su situación actual (exportación, canales, marca...)", "respuesta": "respuesta con ejemplos de cómo otras empresas similares lo resolvieron en Alibaba.com"}
     ]
   },
   "confianza": "alta | media | baja"
