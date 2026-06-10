@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const { company } = req.body || {};
   if (!company) return res.status(400).json({ error: 'Falta el campo company' });
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key no configurada en el servidor' });
 
   const prompt = `Eres un experto en análisis comercial y estrategia de ventas B2B, especializado en ecommerce, marketplaces y expansión internacional. Tu tarea es hacer el "discovery" de una empresa para entender si encaja como potencial vendor en Alibaba.com.
@@ -25,7 +25,7 @@ Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, si
     "producto_estrella": "nombre o descripción del producto principal",
     "venta_online_propia": "Sí | No",
     "plataforma_ecommerce": "nombre de la plataforma o N/D si no se detecta",
-    "marketplaces": "lista de marketplaces donde vende o 'Ninguno detectado'"
+    "marketplaces": "lista de marketplaces donde vende o Ninguno detectado"
   },
   "estrategia_comercial": {
     "exportador": "Sí | No | Posiblemente",
@@ -43,17 +43,19 @@ Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, si
 Analiza esta empresa: ${company}`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
-        })
-      }
-    );
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.3,
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -61,7 +63,7 @@ Analiza esta empresa: ${company}`;
     }
 
     const data = await response.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const raw = data.choices?.[0]?.message?.content || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
     return res.status(200).json(result);
