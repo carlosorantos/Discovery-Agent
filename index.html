@@ -146,10 +146,51 @@ function renderResults(d){
   document.getElementById('result-name').textContent=d.empresa||document.getElementById('company-input').value;
   var r2=confidenceBadge(d.confianza),badge=document.getElementById('confidence-badge');
   badge.textContent=r2[1];badge.className='badge '+r2[0];
-  document.getElementById('catalogo-body').innerHTML=r('¿Fabricante o distribuidor?',c.tipo)+r('¿Puede hacer Private Label?',c.private_label)+r('Nº de SKUs aprox.',c.num_skus)+r('Producto estrella',c.producto_estrella)+r('¿Vende online de forma propia?',c.venta_online_propia)+r('Plataforma ecommerce',c.plataforma_ecommerce)+r('¿Vende en marketplaces?',c.marketplaces);
-  document.getElementById('estrategia-body').innerHTML=r('¿Exportador?',e.exportador)+r('Mercados / países',e.mercados)+r('Tipos de cliente',e.tipos_cliente)+r('Adquisición de clientes',e.adquisicion_clientes);
+
+  document.getElementById('catalogo-body').innerHTML=
+    r('Facturación anual aprox.',d.facturacion_anual)+
+    r('¿Fabricante o distribuidor?',c.tipo)+
+    r('¿Puede hacer Private Label?',c.private_label)+
+    r('Nº de SKUs aprox.',c.num_skus)+
+    r('Producto estrella',c.producto_estrella)+
+    r('¿Vende online de forma propia?',c.venta_online_propia)+
+    r('Plataforma ecommerce',c.plataforma_ecommerce)+
+    r('¿Vende en marketplaces?',c.marketplaces);
+
+  document.getElementById('estrategia-body').innerHTML=
+    r('¿Exportador?',e.exportador)+
+    r('Mercados / países',e.mercados)+
+    r('Tipos de cliente',e.tipos_cliente)+
+    r('Adquisición de clientes',e.adquisicion_clientes);
+
   var args=Array.isArray(n.argumentos_clave)?n.argumentos_clave.map(function(a){return'<div class="arg-item"><div class="arg-dot"></div><span>'+a+'</span></div>'}).join(''):'';
-  document.getElementById('nego-body').innerHTML='<div class="nego-pitch"><p>'+(n.enfoque||'No disponible')+'</p></div>'+(args?'<div class="args-label">Argumentos clave</div><div class="args-list">'+args+'</div>':'');
+
+  var objeciones='';
+  if(Array.isArray(n.objeciones)){
+    objeciones='<div style="margin-top:14px"><div class="args-label">Objeciones y cómo rebatirlas</div>';
+    n.objeciones.forEach(function(o){
+      objeciones+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px">';
+      objeciones+='<div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px">❝ '+o.objecion+'</div>';
+      objeciones+='<div style="font-size:13px;color:var(--teal)">→ '+o.respuesta+'</div>';
+      objeciones+='</div>';
+    });
+    objeciones+='</div>';
+  }
+
+  var sourcesHtml='';
+  if(Array.isArray(d.sources)&&d.sources.length){
+    sourcesHtml='<div style="margin-top:14px"><div class="args-label">Fuentes consultadas</div><div style="display:flex;flex-direction:column;gap:4px">';
+    d.sources.forEach(function(s){
+      sourcesHtml+='<a href="'+s.url+'" target="_blank" style="font-size:12px;color:var(--purple);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">↗ '+s.title+'</a>';
+    });
+    sourcesHtml+='</div></div>';
+  }
+
+  document.getElementById('nego-body').innerHTML=
+    '<div class="nego-pitch"><p>'+(n.enfoque||'No disponible')+'</p></div>'+
+    (args?'<div class="args-label">Argumentos clave</div><div class="args-list">'+args+'</div>':'')+
+    objeciones+sourcesHtml;
+
   document.getElementById('loading').style.display='none';
   document.getElementById('results').style.display='block';
   document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
