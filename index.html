@@ -83,7 +83,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <span class="logo-name">Vendor <span>Discovery</span></span>
   </div>
-  <span class="header-note">Powered by Gemini AI</span>
+  <span class="header-note">Powered by Groq AI</span>
 </header>
 <main class="main">
   <div class="hero">
@@ -128,14 +128,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="card">
         <div class="card-header">
           <div class="card-icon icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-          <span class="card-title">Negociación — Cómo venderles Alibaba.com</span>
+          <span class="card-title">Negociación — Pitch para Alibaba.com</span>
         </div>
         <div class="nego-body" id="nego-body"></div>
       </div>
     </div>
     <button class="btn-nueva" onclick="resetUI()">Analizar otra empresa</button>
   </div>
-  <div class="footer">Gratis hasta 1.500 consultas/día con Gemini AI.</div>
+  <div class="footer">Gratis hasta 14.400 consultas/día con Groq AI.</div>
 </main>
 <script>
 function setExample(n){document.getElementById('company-input').value=n;document.getElementById('company-input').focus()}
@@ -163,6 +163,17 @@ function renderResults(d){
     r('Tipos de cliente',e.tipos_cliente)+
     r('Adquisición de clientes',e.adquisicion_clientes);
 
+  var enfoqueHtml='';
+  if(n.enfoque){
+    var secciones=n.enfoque.split('|');
+    var titulos=['🎯 El gancho','⚠️ Su reto actual','💡 La solución','📈 El ROI','🎤 Elevator pitch'];
+    enfoqueHtml=secciones.map(function(s,i){
+      var texto=s.trim().replace(/^\d+\)\s*/,'');
+      var titulo=titulos[i]||('Sección '+(i+1));
+      return '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin-bottom:4px">'+titulo+'</div><div style="font-size:14px;color:var(--text);line-height:1.7">'+texto+'</div></div>';
+    }).join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');
+  }
+
   var args=Array.isArray(n.argumentos_clave)?n.argumentos_clave.map(function(a){return'<div class="arg-item"><div class="arg-dot"></div><span>'+a+'</span></div>'}).join(''):'';
 
   var objeciones='';
@@ -187,8 +198,8 @@ function renderResults(d){
   }
 
   document.getElementById('nego-body').innerHTML=
-    '<div class="nego-pitch"><p>'+(n.enfoque||'No disponible')+'</p></div>'+
-    (args?'<div class="args-label">Argumentos clave</div><div class="args-list">'+args+'</div>':'')+
+    '<div class="nego-pitch">'+enfoqueHtml+'</div>'+
+    (args?'<div style="margin-top:14px"><div class="args-label">Argumentos clave</div><div class="args-list">'+args+'</div></div>':'')+
     objeciones+sourcesHtml;
 
   document.getElementById('loading').style.display='none';
