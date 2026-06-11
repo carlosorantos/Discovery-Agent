@@ -15,7 +15,6 @@ export default async function handler(req, res) {
   if (!tavilyKey) return res.status(500).json({ error: 'TAVILY_API_KEY no configurada' });
 
   try {
-    // PASO 1: Buscar información real de la empresa con Tavily
     const searchRes = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,16 +36,15 @@ export default async function handler(req, res) {
       searchContext = searchData.answer ? `Resumen: ${searchData.answer}\n\nFuentes:\n${snippets}` : snippets;
     }
 
-    // PASO 2: Analizar con Groq usando la información encontrada
-    const prompt = `Eres un experto en análisis comercial B2B especializado en ecommerce y marketplaces internacionales. Analiza la empresa "${company}" para evaluar su perfil como potencial vendor en Alibaba.com.
+    const prompt = `Eres un experto en análisis comercial B2B especializado en ecommerce y marketplaces internacionales, con profundo conocimiento de Alibaba.com como plataforma de ventas B2B global. Analiza la empresa "${company}" para evaluar su perfil como potencial vendor en Alibaba.com.
 
 ${searchContext ? `Información encontrada en internet sobre esta empresa:\n${searchContext}\n\n` : ''}
 
-Basándote en esta información, responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks) con esta estructura exacta:
+Basándote en esta información, responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks, sin saltos de línea dentro de los valores de string) con esta estructura exacta:
 
 {
   "empresa": "nombre oficial de la empresa",
-  "facturacion_anual": "estimación de facturación anual (ej: ~50M€, +200M€, desconocido...)",
+  "facturacion_anual": "estimación de facturación anual con fuente o base de la estimación (ej: ~50M euros según registros mercantiles, +200M euros según prensa especializada)",
   "catalogo": {
     "tipo": "Fabricante | Distribuidor/Importador | Fabricante y Distribuidor",
     "private_label": "Sí | No | Posiblemente",
@@ -58,21 +56,21 @@ Basándote en esta información, responde ÚNICAMENTE con un JSON válido (sin m
   },
   "estrategia_comercial": {
     "exportador": "Sí | No | Posiblemente",
-    "mercados": "países o regiones donde opera",
-    "tipos_cliente": "tipos de clientes (B2B, B2C, retailers, etc.)",
-    "adquisicion_clientes": "cómo adquieren clientes"
+    "mercados": "países o regiones donde opera con detalle",
+    "tipos_cliente": "tipos de clientes con detalle (B2B, B2C, retailers, etc.)",
+    "adquisicion_clientes": "cómo adquieren clientes actualmente"
   },
-"negociacion": {
-    "enfoque": "Escribe un pitch de venta estructurado y detallado para convencer a esta empresa concreta de vender en Alibaba.com. Debe tener estas secciones separadas explícitamente por caracteres '\\n\\n' (escapados, no hagas saltos de línea reales en tu respuesta):\n\n1. EL GANCHO: Una frase potente y específica para esta empresa que capture su atención.\n\n2. SU RETO ACTUAL: Identifica el dolor o limitación comercial específica que tiene esta empresa hoy (dependencia de ferias, mercados saturados, stock sin salida, etc.).\n\n3. LA SOLUCIÓN: Explica cómo Alibaba.com resuelve ese reto concreto. No hables de Alibaba en general, habla de cómo encaja con SU modelo de negocio, SUS productos y SU situación.\n\n4. EL ROI: 2-3 beneficios muy tangibles y específicos para esta empresa (no genéricos). Menciona capacidades reales de Alibaba.com como RFQs, Smart Assistant, verified supplier, MOQ protection, etc.\n\n5. ELEVATOR PITCH: Un párrafo de 4-5 frases listo para decir en voz alta a su director comercial, usando el nombre de la empresa y detalles reales de su negocio.",
+  "negociacion": {
+    "enfoque": "Pitch estructurado en 5 partes separadas por el símbolo | : 1) EL GANCHO: frase potente y específica para esta empresa concreta. 2) SU RETO ACTUAL: el dolor comercial específico que tiene hoy basado en lo que sabes de ellos. 3) LA SOLUCIÓN: cómo Alibaba.com resuelve ese reto concreto para su modelo de negocio y sus productos específicos. 4) EL ROI: 2-3 beneficios tangibles mencionando capacidades reales de Alibaba.com como RFQs, Smart Assistant, Verified Supplier, MOQ protection, Trade Assurance. 5) ELEVATOR PITCH: párrafo de 4-5 frases listo para decir en voz alta a su director comercial usando el nombre real de la empresa y detalles concretos de su negocio.",
     "argumentos_clave": [
-      "argumento 1: muy específico para esta empresa, con datos concretos de Alibaba.com relevantes para su categoría de producto",
-      "argumento 2: basado en sus mercados actuales y cómo Alibaba.com los complementa o abre nuevos compradores B2B",
-      "argumento 3: basado en su modelo de negocio concreto (fabricante/distribuidor) y cómo encaja en Alibaba.com"
+      "argumento 1 muy específico para esta empresa con datos concretos de Alibaba.com relevantes para su categoría",
+      "argumento 2 basado en sus mercados actuales y cómo Alibaba.com abre nuevos compradores B2B",
+      "argumento 3 basado en su modelo de negocio concreto y cómo encaja en Alibaba.com"
     ],
     "objeciones": [
-      {"objecion": "objeción MUY probable y específica para este tipo de empresa y sector, no genérica", "respuesta": "respuesta concreta con datos o ejemplos reales de Alibaba.com que rebatan exactamente esa objeción"},
-      {"objecion": "segunda objeción específica del sector o modelo de negocio de esta empresa", "respuesta": "respuesta con solución concreta que ofrece Alibaba.com para ese caso"},
-      {"objecion": "tercera objeción relacionada con su situación actual (exportación, canales, marca...)", "respuesta": "respuesta con ejemplos de cómo otras empresas similares lo resolvieron en Alibaba.com"}
+      {"objecion": "objeción muy probable y específica para este sector y tipo de empresa", "respuesta": "respuesta concreta con datos o ejemplos reales de Alibaba.com que rebatan exactamente esa objeción"},
+      {"objecion": "segunda objeción específica del sector o modelo de negocio", "respuesta": "respuesta con solución concreta que ofrece Alibaba.com para ese caso"},
+      {"objecion": "tercera objeción relacionada con su situación actual", "respuesta": "respuesta con ejemplos de cómo empresas similares lo resolvieron en Alibaba.com"}
     ]
   },
   "confianza": "alta | media | baja"
@@ -98,32 +96,11 @@ Basándote en esta información, responde ÚNICAMENTE con un JSON válido (sin m
     }
 
     const groqData = await groqRes.json();
-    let raw = groqData.choices?.[0]?.message?.content || '';
-    
-    // 1. Eliminar bloques de código markdown si los hay
-    let clean = raw.replace(/```json|```/g, '').trim();
-    
-    // 2. Sanear saltos de línea y tabulaciones literales dentro de los strings
-    // Reemplaza "Enters" invisibles dentro del texto por la secuencia "\n" que JSON sí entiende
-    clean = clean.replace(/[\n\r\t]/g, function (match) {
-      if (match === '\n') return '\\n';
-      if (match === '\r') return '\\r';
-      if (match === '\t') return '\\t';
-      return match;
-    });
-
-    // 3. Parsear el resultado
-    try {
-      const result = JSON.parse(clean);
-      result.sources = sources;
-      return res.status(200).json(result);
-    } catch (parseError) {
-      console.error("Error parseando el JSON devuelto por Groq:", parseError);
-      return res.status(500).json({ 
-        error: "La respuesta de la IA contiene un error de formato insalvable.", 
-        rawOutput: clean 
-      });
-    }
+    const raw = groqData.choices?.[0]?.message?.content || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    result.sources = sources;
+    return res.status(200).json(result);
 
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Error interno del servidor' });
